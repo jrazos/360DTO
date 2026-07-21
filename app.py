@@ -35,7 +35,7 @@ diccionario_recomendaciones = {
 def san(texto):
     return str(texto).encode('latin-1', 'replace').decode('latin-1')
 
-# --- 6. GENERACIÓN DEL DOCUMENTO BLINDADO ---
+# --- 6. GENERACIÓN DEL DOCUMENTO CORREGIDO ---
 def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3_comps):
     means_sorted = df_competencias.mean().round(2).sort_values(ascending=True)
     
@@ -72,7 +72,7 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     pdf.set_fill_color(192, 0, 0)
     pdf.rect(0, 0, 210, 30, 'F')
     
-    # Cursor posicionado
+    # Posicionamiento del título
     pdf.set_xy(15, 8)
     pdf.set_font("Arial", style="B", size=22)
     pdf.set_text_color(255, 255, 255)
@@ -175,7 +175,7 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
         pdf.set_x(15)
         pdf.cell(180, 6, san(f"Objetivo: {comp}"), ln=1)
         
-        pdf.set_font("Arial", size=10)
+        pdf.set_font("Arial", style="B", size=9)
         pdf.set_text_color(50, 50, 50)
         recomendacion = diccionario_recomendaciones.get(comp, "Reforzar capacitación.")
         for linea in recomendacion.split('\n'):
@@ -202,7 +202,8 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
 
     os.remove(temp_img.name)
         
-    return pdf.output(dest='S').encode('latin1')
+    # ===== MODIFICACIÓN CLAVE AQUÍ =====
+    return bytes(pdf.output())
 
 # --- 7. PROCESAMIENTO PRINCIPAL ---
 if archivo_subido is not None:
