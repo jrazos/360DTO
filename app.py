@@ -72,7 +72,7 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     pdf.set_fill_color(192, 0, 0)
     pdf.rect(0, 0, 210, 30, 'F')
     
-    # Obligamos al cursor a posicionarse exactamente
+    # Cursor posicionado
     pdf.set_xy(15, 8)
     pdf.set_font("Arial", style="B", size=22)
     pdf.set_text_color(255, 255, 255)
@@ -80,17 +80,17 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     
     y_actual = 35 
     
-    # Inserción de Logo segura
+    # Logo
     if os.path.exists('logo.png'):
         w_logo = 35
         x_logo = (210 - w_logo) / 2 
         pdf.image('logo.png', x=x_logo, y=y_actual, w=w_logo) 
         y_actual += 25 
     
-    # Insertar Gráfica
+    # Gráfica
     pdf.image(temp_img.name, x=15, y=y_actual, w=180)
     
-    # FIX: Reiniciamos la "X" y la "Y" para evitar cálculos de espacio negativo
+    # Reset del cursor
     pdf.set_xy(15, y_actual + 105) 
     
     # Títulos
@@ -103,7 +103,6 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     means_original = df_competencias.mean().round(2)
     labels_original = df_competencias.columns
     
-    # Análisis Forzando Medidas Exactas (100mm + 80mm = 180mm)
     for comp in labels_original:
         score = means_original[comp]
         if score >= 2.45:
@@ -124,7 +123,7 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
         
         pdf.set_font("Arial", size=9)
         pdf.set_text_color(80, 80, 80)
-        pdf.set_x(15) # Seguro Anti-Corte
+        pdf.set_x(15) 
         pdf.multi_cell(180, 4.5, san(f"Análisis: {texto}"))
         pdf.ln(2)
 
@@ -239,4 +238,4 @@ if archivo_subido is not None:
         st.download_button("📄 Descargar Reporte Final (PDF)", data=pdf_bytes, file_name="Reporte_Clima_Laboral.pdf", mime="application/pdf")
         
     except Exception as e:
-        st.error(f"Error procesando el archivo. Verifica el CSV. Detalle: {e}")
+        st.error(f"Error procesando el archivo. Detalle técnico: {e}")
