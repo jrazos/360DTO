@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from fpdf import FPDF
+from fpdf import FPDF, HTMLMixin
 import tempfile
 import os
 
@@ -9,28 +9,30 @@ import os
 st.set_page_config(page_title="Reporte 360°", page_icon="📈", layout="centered")
 
 # --- 2. MOSTRAR LOGO EN LA PÁGINA WEB ---
-# Si el archivo logo.png está en GitHub, lo muestra en la pantalla
 if os.path.exists("logo.png"):
     st.image("logo.png", width=250)
 
 st.title("📈 Generador de Clima Laboral 360°")
 st.write("Sube tu archivo de respuestas para generar el reporte estratégico.")
 
-# --- 3. INTERFAZ PARA SUBIR ARCHIVOS (Se quitó la sucursal) ---
+# --- 3. INTERFAZ PARA SUBIR ARCHIVOS ---
 archivo_subido = st.file_uploader("Sube el archivo CSV de Google Forms", type=["csv"])
 
 # --- 4. DICCIONARIO ESTRATÉGICO ---
 diccionario_recomendaciones = {
-    "Liderazgo de Apoyo": "Actividad: Sesiones de mentoría 1 a 1.\nEstrategia: Programa 'Líder Sombra' para observar y corregir actitudes en piso.",
-    "Comunicación Asertiva": "Actividad: Taller práctico de comunicación no violenta.\nEstrategia: Breves reuniones de inicio de turno (5 min) para alinear objetivos.",
-    "Toma de Decisiones": "Actividad: Simuladores de casos reales en sucursal.\nEstrategia: Fomentar el uso de árboles de decisión para problemas operativos comunes.",
-    "Inteligencia Emocional": "Actividad: Taller de manejo de estrés y empatía.\nEstrategia: Creación de un 'espacio seguro' para feedback sin represalias.",
-    "Orientación a Resultados": "Actividad: Revisión semanal de KPIs operativos.\nEstrategia: Tableros visuales de metas alcanzadas en áreas comunes (competencia sana).",
+    "Liderazgo": "Actividad: Sesiones de mentoría 1 a 1.\nEstrategia: Programa 'Líder Sombra' para observar y corregir actitudes en piso.",
+    "Com. Asertiva": "Actividad: Taller práctico de comunicación no violenta.\nEstrategia: Breves reuniones de inicio de turno (5 min) para alinear objetivos.",
+    "Toma Decisiones": "Actividad: Simuladores de casos reales en sucursal.\nEstrategia: Fomentar el uso de árboles de decisión para problemas operativos comunes.",
+    "Int. Emocional": "Actividad: Taller de manejo de estrés y empatía.\nEstrategia: Creación de un 'espacio seguro' para feedback sin represalias.",
+    "Resultados": "Actividad: Revisión semanal de KPIs operativos.\nEstrategia: Tableros visuales de metas alcanzadas en áreas comunes (competencia sana).",
     "Trabajo en Equipo": "Actividad: Dinámicas de team building mensuales.\nEstrategia: Metas compartidas entre Cajas y Piso para forzar colaboración interdepartamental.",
-    "Enfoque al Cliente": "Actividad: Role-play de atención a clientes difíciles.\nEstrategia: Reconocimiento público al 'Empleado del Mes' basado en encuestas de salida.",
-    "Gestión de RRHH": "Actividad: Capacitación en liderazgo motivacional y retención.\nEstrategia: Encuestas de pulso quincenales para medir el ánimo y forzar retroalimentación.",
-    "Aprendizaje Ágil": "Actividad: Sesiones de 'Lecciones Aprendidas' post-errores.\nEstrategia: Rotación temporal de puestos para entender la operación integral."
+    "Enfoque Cliente": "Actividad: Role-play de atención a clientes difíciles.\nEstrategia: Reconocimiento público al 'Empleado del Mes' basado en encuestas de salida.",
+    "Gestion RRHH": "Actividad: Capacitación en liderazgo motivacional y retención.\nEstrategia: Encuestas de pulso quincenales para medir el ánimo y forzar retroalimentación.",
+    "Aprendizaje Agil": "Actividad: Sesiones de 'Lecciones Aprendidas' post-errores.\nEstrategia: Rotación temporal de puestos para entender la operación integral."
 }
+
+class MyFPDF(FPDF, HTMLMixin):
+    pass
 
 # --- 5. FUNCIÓN PARA LIMPIAR TEXTOS ---
 def san(texto):
@@ -64,30 +66,39 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     plt.close()
 
     # Construcción del PDF
-    pdf = FPDF()
+    pdf = MyFPDF()
+    pdf.set_margins(15, 15, 15) # Asegura márgenes estrictos
     pdf.set_auto_page_break(auto=True, margin=15) 
     pdf.add_page()
     
     # Encabezado Rojo Oficial
     pdf.set_fill_color(192, 0, 0)
-    pdf.rect(0, 0, 210, 30, 'F')
-    pdf.set_y(8)
+    pdf.rect(0, 0, 210, 35, 'F')
+    
+    # Cursor explícito al inicio
+    pdf.set_xy(15, 12)
     pdf.set_font("Arial", style="B", size=22)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(0, 10, san("Reporte Clima Laboral 360°"), align="C", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 6, san("Análisis de Desempeño por Competencias"), align="C", ln=True)
     
-    y_actual = 35 
+    y_actual = 40 
     
     # Insertar Logo en el PDF automáticamente
     if os.path.exists('logo.png'):
-        w_logo = 35
-        x_logo = (210 - w_logo) / 2 # Centro exacto
+        w_logo = 40
+        x_logo = (210 - w_logo) / 2 
         pdf.image('logo.png', x=x_logo, y=y_actual, w=w_logo) 
-        y_actual += 25 # Empuja la gráfica hacia abajo
+        y_actual += 25 
     
     # Insertar Gráfica
     pdf.image(temp_img.name, x=15, y=y_actual, w=180)
-    pdf.set_y(y_actual + 105) 
+    
+    # ====== FIX CRÍTICO DEL ERROR ======
+    # Resetea de forma obligatoria el cursor a la izquierda y debajo de la gráfica
+    pdf.set_xy(15, y_actual + 110) 
+    # ===================================
     
     # Título Análisis Detallado
     pdf.set_font("Arial", style="B", size=14)
@@ -103,11 +114,11 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     for comp in labels_original:
         score = means_original[comp]
         if score >= 2.45:
-            color, estado, texto = (42, 157, 143), "FORTALEZA", f"Sobresale en {comp.lower()}."
+            color, estado, texto = (42, 157, 143), "FORTALEZA", f"Sobresale en {comp}."
         elif score >= 2.35:
-            color, estado, texto = (244, 162, 97), "EN DESARROLLO", f"Nivel funcional en {comp.lower()}."
+            color, estado, texto = (244, 162, 97), "EN DESARROLLO", f"Nivel funcional en {comp}."
         else:
-            color, estado, texto = (231, 111, 81), "AREA CRITICA", f"ALERTA en {comp.lower()}."
+            color, estado, texto = (231, 111, 81), "AREA CRITICA", f"ALERTA en {comp}."
             
         pdf.set_font("Arial", style="B", size=11)
         pdf.set_text_color(50, 50, 50)
@@ -128,13 +139,13 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     # Ranking
     pdf.set_font("Arial", style="B", size=14)
     pdf.set_text_color(192, 0, 0)
-    pdf.cell(0, 10, "Ranking de Personal", ln=True)
+    pdf.cell(0, 10, san("Ranking de Personal"), ln=True)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(5)
     
     pdf.set_font("Arial", style="B", size=11)
     pdf.set_text_color(42, 157, 143)
-    pdf.cell(100, 8, "Top 3 - Mejores Evaluados", ln=0)
+    pdf.cell(100, 8, san("Top 3 - Mejores Evaluados"), ln=0)
     pdf.set_text_color(231, 111, 81)
     pdf.cell(0, 8, san("Top 3 - Áreas de Oportunidad"), ln=True)
     
@@ -166,7 +177,7 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
         
         pdf.set_font("Arial", size=10)
         pdf.set_text_color(50, 50, 50)
-        recomendacion = diccionario_recomendaciones.get(comp, "Reforzar capacitación.")
+        recomendacion = diccionario_recomendaciones.get(comp, "Reforzar capacitación y seguimiento constante.")
         for linea in recomendacion.split('\n'):
             pdf.multi_cell(0, 5, san(f"- {linea}"))
         pdf.ln(3)
@@ -176,7 +187,7 @@ def generar_pdf_completo(df_competencias, top_3, bottom_3, comentarios, lowest_3
     # Comentarios
     pdf.set_font("Arial", style="B", size=14)
     pdf.set_text_color(192, 0, 0)
-    pdf.cell(0, 10, "Voces del Equipo", ln=True)
+    pdf.cell(0, 10, san("Voces del Equipo"), ln=True)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(3)
     pdf.set_font("Arial", style="I", size=9)
@@ -197,9 +208,9 @@ if archivo_subido is not None:
         columnas_competencias = df.columns[5:14]
         
         nombres_cortos = [
-            "Liderazgo de Apoyo", "Comunicación Asertiva", "Toma de Decisiones", 
-            "Inteligencia Emocional", "Orientación a Resultados", "Trabajo en Equipo", 
-            "Enfoque al Cliente", "Gestión de RRHH", "Aprendizaje Ágil"
+            "Liderazgo", "Com. Asertiva", "Toma Decisiones", 
+            "Int. Emocional", "Resultados", "Trabajo en Equipo", 
+            "Enfoque Cliente", "Gestion RRHH", "Aprendizaje Agil"
         ]
         
         df_competencias = df[columnas_competencias].copy()
@@ -214,7 +225,7 @@ if archivo_subido is not None:
         lowest_3_comps = df_competencias.mean().sort_values().head(3).index.tolist()
         
         comentarios_raw = df.iloc[:, 14].dropna().tolist()
-        comentarios_validos = [c for c in comentarios_raw if len(str(c).strip()) > 10]
+        comentarios_validos = [str(c).strip() for c in comentarios_raw if len(str(c).strip()) > 10]
         comentarios_muestra = comentarios_validos[:4] if len(comentarios_validos) >= 4 else comentarios_validos
 
         # Ejecutamos el creador de PDF
@@ -224,4 +235,4 @@ if archivo_subido is not None:
         st.download_button("📄 Descargar Reporte Final (PDF)", data=pdf_bytes, file_name="Reporte_Clima_Laboral.pdf", mime="application/pdf")
         
     except Exception as e:
-        st.error(f"Error procesando el archivo. Verifica el CSV. Detalle: {e}")
+        st.error(f"Error procesando el archivo. Verifica el CSV. Detalle técnico: {e}")
